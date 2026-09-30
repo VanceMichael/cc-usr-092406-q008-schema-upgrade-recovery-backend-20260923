@@ -10,8 +10,14 @@ class Pond(Base):
     name = Column(String(100), unique=True, index=True, nullable=False)
     area = Column(Float, nullable=False, comment="面积(亩)")
     water_depth = Column(Float, nullable=False, comment="水深(米)")
-    species = Column(String(100), comment="养殖品种")
+    # v3 起品种必填；历史 NULL 行在 v2->v3 迁移时补为“未指定品种”
+    species = Column(String(100), nullable=False, comment="养殖品种")
     status = Column(String(20), default="active", comment="状态: active, inactive")
+    # v2 新增
+    location_code = Column(String(20), comment="区位编码")
+    # v3 新增：塘口业务编码，必填且唯一；历史行由迁移按 'P' + 6 位 id 补码
+    pond_code = Column(String(30), unique=True, index=True, nullable=False,
+                       default="", server_default="", comment="塘口编码")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -28,6 +34,8 @@ class Batch(Base):
     estimated_harvest_date = Column(Date, comment="预计收获日期")
     actual_harvest_date = Column(Date, comment="实际收获日期")
     status = Column(String(20), default="active", comment="状态: active, harvested, closed")
+    # v2 新增
+    notes = Column(Text, comment="批次备注")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

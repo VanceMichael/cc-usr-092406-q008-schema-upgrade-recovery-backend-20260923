@@ -6,8 +6,10 @@ class PondBase(BaseModel):
     name: str
     area: float
     water_depth: float
-    species: Optional[str] = None
+    species: str
     status: Optional[str] = "active"
+    location_code: Optional[str] = None
+    pond_code: Optional[str] = None
 
 class PondCreate(PondBase):
     pass
@@ -18,6 +20,8 @@ class PondUpdate(BaseModel):
     water_depth: Optional[float] = None
     species: Optional[str] = None
     status: Optional[str] = None
+    location_code: Optional[str] = None
+    pond_code: Optional[str] = None
 
 class PondResponse(PondBase):
     id: int

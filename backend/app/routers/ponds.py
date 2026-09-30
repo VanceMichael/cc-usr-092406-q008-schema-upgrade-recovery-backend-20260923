@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import List
 from ..database import get_db
 from ..models import Pond
@@ -15,9 +16,16 @@ def create_pond(pond: PondCreate, db: Session = Depends(get_db)):
     db_pond = db.query(Pond).filter(Pond.name == pond.name).first()
     if db_pond:
         raise HTTPException(status_code=400, detail="塘口名称已存在")
-    new_pond = Pond(**pond.dict())
+    data = pond.dict()
+    if not data.get("pond_code"):
+        data["pond_code"] = f"P{db.query(Pond).count() + 1:06d}"
+    new_pond = Pond(**data)
     db.add(new_pond)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="塘口编码或名称冲突")
     db.refresh(new_pond)
     return new_pond
 
