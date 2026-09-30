@@ -28,9 +28,9 @@ def analyze_cycle(batch_id: int, db: Session = Depends(get_db)):
         HarvestSale.batch_id == batch.id
     ).scalar() or 0
     
-    feed_total = db.query(func.sum(FeedingRecord.feed_quantity)).filter(
+    feed_total = float(db.query(func.sum(FeedingRecord.feed_quantity)).filter(
         FeedingRecord.batch_id == batch.id
-    ).scalar() or 0
+    ).scalar() or 0)
     
     total_cost = db.query(func.sum(CostRecord.amount)).filter(
         CostRecord.batch_id == batch.id

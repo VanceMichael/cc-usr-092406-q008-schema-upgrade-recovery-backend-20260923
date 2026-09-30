@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Date, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Float, Numeric, Date, DateTime, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
@@ -7,13 +7,15 @@ class Pond(Base):
     __tablename__ = "ponds"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), unique=True, index=True, nullable=False)
+    name = Column(String(50), unique=True, index=True, nullable=False)
     area = Column(Float, nullable=False, comment="面积(亩)")
     water_depth = Column(Float, nullable=False, comment="水深(米)")
     species = Column(String(100), comment="养殖品种")
     status = Column(String(20), default="active", comment="状态: active, inactive")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # v2 起新增：塘口编码 P + 8 位补零，迁移时按主键回填，全局唯一
+    location_code = Column(String(20), unique=True, index=True, nullable=False, comment="塘口编码 Pxxxxxxxx")
 
     batches = relationship("Batch", back_populates="pond")
 
@@ -62,12 +64,19 @@ class FeedingRecord(Base):
     batch_id = Column(Integer, ForeignKey("batches.id"), nullable=False)
     feeding_date = Column(Date, nullable=False, comment="投喂日期")
     feed_type = Column(String(100), nullable=False, comment="饲料类型")
-    feed_quantity = Column(Float, nullable=False, comment="投喂量(公斤)")
+    # v3 起由 FLOAT 收紧为 NUMERIC(10,2)
+    feed_quantity = Column(Numeric(10, 2), nullable=False, comment="投喂量(公斤)")
     feeding_time = Column(String(20), comment="投喂时间")
     weather = Column(String(50), comment="天气情况")
     water_temperature = Column(Float, comment="水温(℃)")
     notes = Column(Text, comment="备注")
     created_at = Column(DateTime, default=datetime.utcnow)
+    # v2 起新增：饲料批次号（ALTER TABLE 追加，列序在末尾）
+    feed_batch_number = Column(String(50), comment="饲料批次号")
+
+    __table_args__ = (
+        Index("ix_feeding_records_batch_date", "batch_id", "feeding_date"),
+    )
 
     batch = relationship("Batch", back_populates="feeding_records")
 
@@ -114,7 +123,8 @@ class CostRecord(Base):
     id = Column(Integer, primary_key=True, index=True)
     batch_id = Column(Integer, ForeignKey("batches.id"), nullable=False)
     cost_date = Column(Date, nullable=False, comment="费用日期")
-    cost_type = Column(String(50), nullable=False, comment="费用类型: feed, medicine, labor, electricity, other")
+    # v3 起由 VARCHAR(50) 收紧为 VARCHAR(30)
+    cost_type = Column(String(30), nullable=False, comment="费用类型: feed, medicine, labor, electricity, other")
     amount = Column(Float, nullable=False, comment="金额(元)")
     description = Column(String(500), comment="费用描述")
     quantity = Column(Float, comment="数量")
@@ -122,6 +132,10 @@ class CostRecord(Base):
     unit_price = Column(Float, comment="单价")
     notes = Column(Text, comment="备注")
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index("ix_cost_records_batch_date", "batch_id", "cost_date"),
+    )
 
     batch = relationship("Batch", back_populates="cost_records")
 

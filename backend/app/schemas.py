@@ -8,6 +8,8 @@ class PondBase(BaseModel):
     water_depth: float
     species: Optional[str] = None
     status: Optional[str] = "active"
+    # 由服务端按主键自动生成 P + 8 位补零编码，创建时无需传入
+    location_code: Optional[str] = None
 
 class PondCreate(PondBase):
     pass
